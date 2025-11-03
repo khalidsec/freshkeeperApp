@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshKeeper - Expiry Tracker</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        /* --- SECTION: Professional UI Variables & Base Styles --- */
+        :root {
+            --primary-color: #27ae60;
+            --primary-light: #e9f7ef;
+            --background-color: #f8f9fa;
+            --card-bg-color: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #e_dde2e7;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+            /* Expiry Colors */
+            --color-red: #e74c3c;
+            --color-orange: #f39c12;
+            --color-yellow: #f1c40f;
+            --color-green: #2ecc71;
+            
+            --font-family: 'Poppins', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- SECTION: App Layout & Container --- */
+        .app-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* --- SECTION: Dashboard - Stats --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-card .label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* --- SECTION: Dashboard - Item List --- */
+        #item-list-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #item-list.empty {
+            text-align: center;
+            padding: 4rem 1rem;
+            background: var(--card-bg-color);
+            border-radius: 12px;
+            color: var(--text-secondary);
+        }
+        
+        #item-list.empty i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #bdc3c7;
+        }
+
+        .item-card {
+            background-color: var(--card-bg-color);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+        }
+        .item-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .expiry-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: absolute;
+            left: 1rem;
+            top: 1.25rem;
+        }
+        .expiry-indicator.red { background-color: var(--color-red); }
+        .expiry-indicator.orange { background-color: var(--color-orange); }
+        .expiry-indicator.yellow { background-color: var(--color-yellow); }
+        .expiry-indicator.green { background-color: var(--color-green); }
+
+        .item-category-icon {
+            font-size: 1.8rem;
+            padding-left: 1rem; /* Space for the indicator dot */
+        }
+
+        .item-details { flex-grow: 1; }
+        .item-name { font-weight: 600; font-size: 1.1rem; }
+        .item-expiry-info { font-size: 0.9rem; color: var(--text-secondary); }
+        .days-remaining { font-weight: 600; }
+        .days-remaining.red { color: var(--color-red); }
+        .days-remaining.orange { color: var(--color-orange); }
+        .days-remaining.yellow { color: var(--color-yellow); }
+        .days-remaining.green { color: var(--primary-color); }
+
+        /* --- SECTION: Item Actions Menu --- */
+        .item-actions { position: relative; }
+        .menu-trigger {
+            background: none; border: none; cursor: pointer;
+            font-size: 1.2rem; color: var(--text-secondary);
+            padding: 0.5rem; border-radius: 50%;
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .menu-trigger:hover { background-color: var(--background-color); }
+        
+        .actions-menu {
+            display: none;
+            position: absolute;
+            right: 0; top: 45px;
+            background: var(--card-bg-color);
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            list-style: none;
+            z-index: 10;
+            overflow: hidden;
+            width: 150px;
+        }
+        .actions-menu.visible { display: block; }
+        .actions-menu li button {
+            background: none; border: none; cursor: pointer;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .actions-menu li button:hover { background-color: var(--primary-light); }
+        .actions-menu li button .fa-check { color: var(--color-green); }
+        .actions-menu li button .fa-pencil { color: #3498db; }
+        .actions-menu li button .fa-trash { color: var(--color-red); }
+
+        /* --- SECTION: Add Item Button (FAB) --- */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: var(--card-bg-color);
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease, background-color 0.2s;
+            z-index: 99;
+        }
+        .fab:hover {
+            transform: scale(1.05);
+            background-color: #219d55;
+        }
+
+        /* --- SECTION: Add/Edit Item Modal --- */
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background: var(--background-color);
+            padding: 2rem;
+            border-radius: 16px;
+            position: relative;
+            z-index: 101;
+            width: 90%;
+            max-width: 500px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal.visible .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        #form-title { font-size: 1.5rem; font-weight: 600; }
+        #close-modal-btn {
+            background: none; border: none; cursor: pointer;
+            font-size: 1.8rem;
+            color: var(--text-secondary);
+            line-height: 1;
+        }
+        
+        #item-form { display: flex; flex-direction: column; gap: 1rem; }
+        #item-form label { font-weight: 500; margin-bottom: -0.5rem; font-size: 0.9rem; }
+        #item-form input, #item-form select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 1rem;
+            font-family: var(--font-family);
+            background-color: var(--card-bg-color);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #item-form input:focus, #item-form select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        
+        #save-button {
+            background-color: var(--primary-color);
+            color: var(--card-bg-color);
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background-color 0.2s;
+        }
+        #save-button:hover { background-color: #219d55; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>FreshKeeper</h1>
+        </header>
+
+        <main>
+            <div id="stats-section" class="stats-grid">
+                </div>
+            
+            <h2 id="item-list-header">Your Items</h2>
+            <div id="item-list">
+                </div>
+        </main>
+    </div>
+
+    <button id="add-item-btn" class="fab" aria-label="Add new item">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <div id="item-modal" class="modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="form-title">Add New Item</h2>
+                <button id="close-modal-btn" aria-label="Close modal">&times;</button>
+            </div>
+            <form id="item-form" novalidate>
+                <input type="hidden" id="item-id">
+
+                <label for="item-name">Product Name</label>
+                <input type="text" id="item-name" required placeholder="e.g., Organic Milk">
+
+                <label for="expiry-date">Expiry Date</label>
+                <input type="date" id="expiry-date" required>
+
+                <label for="category">Category</label>
+                <select id="category" required>
+                    <option value="Dairy">🥛 Dairy</option>
+                    <option value="Meat">🥩 Meat</option>
+                    <option value="Vegetables">🥬 Vegetables</option>
+                    <option value="Fruits">🍎 Fruits</option>
+                    <option value="Pantry">🥫 Pantry</option>
+                    <option value="Frozen">❄️ Frozen</option>
+                    <option value="Beverages">🥤 Beverages</option>
+                    <option value="Other">🛒 Other</option>
+                </select>
+
+                <label for="quantity">Quantity (Optional)</label>
+                <input type="number" id="quantity" min="1" placeholder="e.g., 1">
+
+                <label for="location">Storage Location (Optional)</label>
+                <select id="location" required>
+                    <option value="Fridge">Fridge</option>
+                    <option value="Freezer">Freezer</option>
+                    <option value="Pantry">Pantry</option>
+                </select>
+
+                <button type="submit" id="save-button">Add Item</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- SECTION: STATE & CONSTANTS ---
+        const AppState = { items: [], stats: { used: 0, }, editingItemId: null };
+        const STORAGE_KEYS = { items: 'freshKeeperItems', stats: 'freshKeeperStats' };
+        const CATEGORY_ICONS = { Dairy: '🥛', Meat: '🥩', Vegetables: '🥬', Fruits: '🍎', Pantry: '🥫', Frozen: '❄️', Beverages: '🥤', Other: '🛒' };
+        
+        // --- SECTION: DOM SELECTORS ---
+        const DOMElements = {
+            itemList: document.getElementById('item-list'),
+            statsSection: document.getElementById('stats-section'),
+            addItemBtn: document.getElementById('add-item-btn'),
+            modal: document.getElementById('item-modal'),
+            modalOverlay: document.querySelector('.modal-overlay'),
+            closeModalBtn: document.getElementById('close-modal-btn'),
+            form: document.getElementById('item-form'),
+            formTitle: document.getElementById('form-title'),
+            saveButton: document.getElementById('save-button'),
+            itemId: document.getElementById('item-id'),
+            itemName: document.getElementById('item-name'),
+            expiryDate: document.getElementById('expiry-date'),
+            category: document.getElementById('category'),
+            quantity: document.getElementById('quantity'),
+            location: document.getElementById('location'),
+        };
+
+        // --- SECTION: DATA PERSISTENCE ---
+        const loadFromStorage = () => {
+            AppState.items = JSON.parse(localStorage.getItem(STORAGE_KEYS.items) || '[]');
+            AppState.stats = JSON.parse(localStorage.getItem(STORAGE_KEYS.stats) || '{"used": 0}');
+        };
+        const saveItemsToStorage = () => localStorage.setItem(STORAGE_KEYS.items, JSON.stringify(AppState.items));
+        const saveStatsToStorage = () => localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify(AppState.stats));
+
+        // --- SECTION: CORE LOGIC & UTILITIES ---
+        const calculateDaysRemaining = (expiryDateString) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const expiryDate = new Date(expiryDateString);
+            return Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+        };
+
+        const getExpiryStatus = (days) => {
+            if (days < 0) return { color: 'red', text: `Expired ${-days} day(s) ago` };
+            if (days === 0) return { color: 'red', text: 'Expires today' };
+            if (days <= 2) return { color: 'red', text: `Expires in ${days} day(s)` };
+            if (days <= 5) return { color: 'orange', text: `Expires in ${days} days` };
+            if (days <= 7) return { color: 'yellow', text: `Expires in ${days} days` };
+            return { color: 'green', text: `Expires in ${days} days` };
+        };
+
+        // --- SECTION: MODAL HANDLING ---
+        const openModal = () => DOMElements.modal.classList.add('visible');
+        const closeModal = () => {
+            DOMElements.modal.classList.remove('visible');
+            // Reset form state after transition finishes
+            setTimeout(() => {
+                AppState.editingItemId = null;
+                DOMElements.form.reset();
+                DOMElements.formTitle.textContent = 'Add New Item';
+                DOMElements.saveButton.textContent = 'Add Item';
+            }, 300);
+        };
+
+        // --- SECTION: UI RENDERING ---
+        const render = () => {
+            renderItemList();
+            renderStats();
+        };
+
+        const renderItemList = () => {
+            const list = DOMElements.itemList;
+            list.innerHTML = '';
+
+            if (AppState.items.length === 0) {
+                list.classList.add('empty');
+                list.innerHTML = `<i class="fas fa-box-open"></i><p>No items yet. <br>Tap the '+' button to add your first one!</p>`;
+                return;
+            }
+
+            list.classList.remove('empty');
+            const sortedItems = [...AppState.items].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+
+            sortedItems.forEach(item => {
+                const daysRemaining = calculateDaysRemaining(item.expiryDate);
+                const status = getExpiryStatus(daysRemaining);
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.dataset.id = item.id;
+                card.innerHTML = `
+                    <div class="expiry-indicator ${status.color}"></div>
+                    <div class="item-category-icon">${CATEGORY_ICONS[item.category] || '🛒'}</div>
+                    <div class="item-details">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-expiry-info">
+                            <span class="days-remaining ${status.color}">${status.text}</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="menu-trigger" aria-label="Item actions"><i class="fas fa-ellipsis-v"></i></button>
+                        <ul class="actions-menu">
+                            <li><button data-action="used"><i class="fas fa-check"></i> Mark as Used</button></li>
+                            <li><button data-action="edit"><i class="fas fa-pencil"></i> Edit Item</button></li>
+                            <li><button data-action="delete"><i class="fas fa-trash"></i> Delete Item</button></li>
+                        </ul>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        };
+
+        const renderStats = () => {
+            const expiringSoonCount = AppState.items.filter(item => calculateDaysRemaining(item.expiryDate) <= 7).length;
+            DOMElements.statsSection.innerHTML = `
+                <div class="stat-card">
+                    <div class="value">${expiringSoonCount}</div>
+                    <div class="label">Expiring Soon</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${AppState.items.length}</div>
+                    <div class="label">Items Tracked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${AppState.stats.used}</div>
+                    <div class="label">Items Saved</div>
+                </div>
+            `;
+        };
+        
+        // --- SECTION: EVENT HANDLERS & ACTIONS ---
+        const handleFormSubmit = (e) => {
+            e.preventDefault();
+            const itemData = {
+                name: DOMElements.itemName.value.trim(),
+                expiryDate: DOMElements.expiryDate.value,
+                category: DOMElements.category.value,
+                quantity: DOMElements.quantity.value,
+                location: DOMElements.location.value,
+            };
+
+            if (!itemData.name || !itemData.expiryDate) {
+                alert('Please enter a name and expiry date.');
+                return;
+            }
+
+            if (AppState.editingItemId) {
+                const index = AppState.items.findIndex(item => item.id === AppState.editingItemId);
+                if (index > -1) AppState.items[index] = { ...AppState.items[index], ...itemData };
+            } else {
+                AppState.items.push({ ...itemData, id: Date.now(), dateAdded: new Date().toISOString() });
+            }
+
+            saveItemsToStorage();
+            closeModal();
+            render();
+        };
+
+        const startEditItem = (itemId) => {
+            const itemToEdit = AppState.items.find(item => item.id === itemId);
+            if (!itemToEdit) return;
+
+            AppState.editingItemId = itemId;
+            DOMElements.itemId.value = itemToEdit.id;
+            DOMElements.itemName.value = itemToEdit.name;
+            DOMElements.expiryDate.value = itemToEdit.expiryDate;
+            DOMElements.category.value = itemToEdit.category;
+            DOMElements.quantity.value = itemToEdit.quantity || '';
+            DOMElements.location.value = itemToEdit.location;
+
+            DOMElements.formTitle.textContent = 'Edit Item';
+            DOMElements.saveButton.textContent = 'Update Item';
+            openModal();
+        };
+
+        const handleItemListClick = (e) => {
+            const menuTrigger = e.target.closest('.menu-trigger');
+            const actionButton = e.target.closest('.actions-menu button');
+            
+            // Close all other menus when one is clicked
+            document.querySelectorAll('.actions-menu.visible').forEach(menu => {
+                if (!menu.parentElement.contains(menuTrigger)) {
+                    menu.classList.remove('visible');
+                }
+            });
+
+            if (menuTrigger) {
+                const menu = menuTrigger.nextElementSibling;
+                menu.classList.toggle('visible');
+            } else if (actionButton) {
+                const card = actionButton.closest('.item-card');
+                const itemId = Number(card.dataset.id);
+                const action = actionButton.dataset.action;
+
+                if (action === 'delete') {
+                    if (confirm('Are you sure you want to delete this item?')) {
+                        AppState.items = AppState.items.filter(item => item.id !== itemId);
+                        saveItemsToStorage();
+                        render();
+                    }
+                } else if (action === 'used') {
+                    AppState.items = AppState.items.filter(item => item.id !== itemId);
+                    AppState.stats.used++;
+                    saveItemsToStorage();
+                    saveStatsToStorage();
+                    render();
+                } else if (action === 'edit') {
+                    startEditItem(itemId);
+                }
+            } else {
+                // If clicking outside any menu, close them all
+                document.querySelectorAll('.actions-menu.visible').forEach(menu => menu.classList.remove('visible'));
+            }
+        };
+
+        // --- SECTION: INITIALIZATION ---
+        const init = () => {
+            loadFromStorage();
+            
+            // Event Listeners
+            DOMElements.addItemBtn.addEventListener('click', () => {
+                AppState.editingItemId = null;
+                openModal();
+            });
+            DOMElements.closeModalBtn.addEventListener('click', closeModal);
+            DOMElements.modalOverlay.addEventListener('click', closeModal);
+            DOMElements.form.addEventListener('submit', handleFormSubmit);
+            // Use event delegation for the dynamic item list
+            DOMElements.itemList.addEventListener('click', handleItemListClick);
+            // Close action menus if clicking anywhere else on the body
+            document.body.addEventListener('click', (e) => {
+                if (!e.target.closest('.item-actions')) {
+                     document.querySelectorAll('.actions-menu.visible').forEach(menu => menu.classList.remove('visible'));
+                }
+            }, true); // Use capture phase to ensure this runs first
+
+            // Set min date for date picker
+            DOMElements.expiryDate.min = new Date().toISOString().split("T")[0];
+
+            render();
+        };
+
+        init();
+    });
+    </script>
+</body>
+</html>
